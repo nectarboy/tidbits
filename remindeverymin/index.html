@@ -1,0 +1,52 @@
+<body>
+
+	<h1>play a sound every one minute</h1>
+
+	<hr>
+
+	<h1 id='sec'>0 : 0</h1>
+
+	<button onclick='remindevery1min ()'>Start Timer</button>
+	<button onclick='noise.ring ()'>Test Noise</button>
+
+</body>
+
+<script type="text/javascript">
+
+	let sec = 0;
+
+	let min = 0;
+
+	const div = document.getElementById ('sec');
+	const noise = new Audio ();
+
+		noise.src = 'alert.wav';
+
+		noise.ring = function () {
+
+			noise.load ();
+			noise.play ();
+
+		}
+	
+	const remindevery1min = function () {
+
+		setTimeout (remindevery1min, 1000);
+
+		sec ++;
+
+		if (sec == 60) {
+
+			noise.ring ();
+
+			sec = 0;
+
+			min ++;
+
+		}
+
+		div.innerHTML = min + ' : ' + sec;
+
+	}
+
+</script>

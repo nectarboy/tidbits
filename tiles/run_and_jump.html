@@ -1,0 +1,466 @@
+<body><script>
+
+	// debug //
+
+	document.addEventListener ('mousedown', e => {
+
+		
+
+	});
+
+	// keymod //
+
+	const keymod = function () {
+
+		keymod.key = {};
+
+		keymod.down = function (e) {
+
+			return keymod.key[e.code] = 1; 
+
+		};
+
+		keymod.up = function (e) {
+
+			delete keymod.key[e.code]; 
+
+		};
+
+		document.addEventListener ('keydown', keymod.down);
+
+		document.addEventListener ('keyup', keymod.up);
+
+	};
+
+	keymod ();
+
+	// world //
+
+	const world = {
+
+		// properties
+
+		w: 16,
+		h: 16,
+
+		tile: 30,
+
+		// components
+
+		player: {},
+
+		map: []
+
+	};
+
+	// plane //
+
+	const plane = function () {
+
+		plane.c = document.createElement ('CANVAS');
+
+			plane.c.width = world.w * world.tile;
+			plane.c.height = world.h * world.tile;
+
+			// magnify
+
+			//plane.c.style.width = plane.c.width * 2 + 'px';
+
+		document.body.appendChild (plane.c);
+
+		plane.ctx = plane.c.getContext ('2d');
+
+	};
+
+	plane ();
+
+	// tile object class
+
+	function TileObject (tx, ty) {
+
+		// tile properties
+
+		this.t = {
+
+			x: tx,
+			y: ty,
+
+			ind: 0,
+
+		};
+
+		this.x = tx * world.tile;
+		this.y = ty * world.tile;
+
+	};
+
+		TileObject.prototype.updateMapIndex = function () {
+
+			this.t.x = (this.x / world.tile) | 0;
+			this.t.y = (this.y / world.tile) | 0;
+
+			return this.t.ind = TileObject.indexFormula (this.t.x, this.t.y);
+
+		};
+
+		TileObject.indexFormula = function (tx, ty) {
+
+			return ty * world.w + tx;
+
+		}
+
+	// player //
+
+	world.player = new TileObject (0, 0);
+
+		world.player.w = world.player.h = 15;
+
+		world.player.vel = {
+
+			x: 0,
+			y: 0
+
+		};
+
+		world.player.acc = {
+
+			x: 0.5,
+			y: 1.5
+
+		};
+
+		world.player.maxvel = {
+
+			x: 4,
+			y: 10
+
+		};
+
+		world.player.jumpval = -17;
+
+		world.player.grounded = 0;
+
+		world.player.update = function () {
+
+			// keys & vel //
+
+			this.vel.y += this.acc.y;
+
+			if (this.vel.y > this.maxvel.y)
+				this.vel.y = this.maxvel.y;
+
+			if (keymod.key.KeyW)
+				this.jump ();
+
+			if (keymod.key.KeyA && !keymod.key.keyD) {
+
+				this.vel.x -= this.acc.x;
+
+				if (this.vel.x < -this.maxvel.x)
+					this.vel.x = -this.maxvel.x;
+
+			}
+			else if (keymod.key.KeyD && !keymod.key.keyA) {
+
+				this.vel.x += this.acc.x;
+
+				if (this.vel.x > this.maxvel.x)
+					this.vel.x = this.maxvel.x;
+
+			}
+			else if (this.grounded)
+				this.vel.x *= 0.8;
+
+			// update position //
+
+			this.x += this.vel.x;
+			this.y += this.vel.y;
+
+			// tiles //
+
+			this.updateMapIndex ();
+
+			this.getNeighbourTiles ();
+
+			// collision //
+
+			this.grounded = false;
+
+			for (let i = 0, l = this.t.neighbours.length; i < l; i++) {
+
+				let tile = this.t.neighbours[i];
+
+				let ind = TileObject.indexFormula (tile.x, tile.y);
+
+				if (!world.map[ind])
+					continue;
+
+				let x = tile.x * world.tile;
+				let y = tile.y * world.tile;;
+
+				this.collision[1] (x, y);
+
+			}
+
+			// dont go out the map bruh
+
+			if (this.y > plane.c.height)
+
+				this.y = -this.h;
+
+			if (this.x < 0)
+
+				this.x = 0;
+
+			else if (this.x > plane.c.width - this.w)
+
+				this.x = plane.c.width - this.w;
+
+			return 0;
+
+		};
+
+		world.player.t.neighbours = [];
+
+		world.player.getNeighbourTiles = function () {			
+
+			let minusx = this.t.x - 1;
+			let x = this.t.x;
+			let plusx = this.t.x + 1;
+
+			let minusy = this.t.y - 1;
+			let y = this.t.y;
+			let plusy = this.t.y + 1;
+
+			return this.t.neighbours = [
+
+				{x:minusx, y:minusy},  {x:x, y:minusy},  {x:plusx, y:minusy},
+
+				{x:minusx, y:y},  {x:x, y:y},  {x:plusx, y:y},
+
+				{x:minusx, y:plusy},  {x:x, y:plusy},  {x:plusx, y:plusy},
+
+			];
+
+		};
+
+		world.player.jump = function () {
+
+			if (!this.grounded)
+				return 0;
+
+			this.vel.y = this.jumpval;
+
+			return 1;
+
+		};
+
+		world.player.collision = {
+
+			1: function (x, y) {
+
+				let p = world.player;
+
+				let top = y - p.h;
+				let bottom = y + world.tile;
+
+				let left = x - p.w;
+				let right = x + world.tile;
+
+				if (p.x > left && p.x < right) {
+
+					if (p.y >= top && p.y - p.vel.y <= top) {
+
+						p.y = top;
+						p.vel.y = 0;
+
+						p.grounded = true;
+
+						return 1;
+
+					}
+					if (p.y <= bottom && p.y - p.vel.y >= bottom) {
+
+						p.y = bottom;
+						p.vel.y = 0;
+
+						return 1;
+
+					}	
+
+				}
+				if (p.y > top && p.y < bottom) {
+
+					if (p.x >= left && p.x - p.vel.x <= left) {
+
+						p.x = left;
+						p.vel.x = 0;
+
+						return 1;
+
+					}
+					if (p.x <= right && p.x - p.vel.x >= right) {
+
+						p.x = right;
+						p.vel.x = 0;
+
+						return 1;
+
+					}	
+
+				}
+
+				return 0;
+
+			}
+
+		};
+
+	// map //
+
+	// BLANK TEMPLATE 
+
+	/*world.map = [
+
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+	];*/
+
+	world.map = [
+
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,
+			0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,
+			0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,
+			0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1,
+			0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,1,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
+			1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+
+	];
+
+		world.map.createBuffer = function (ind) {
+
+			if (!this[ind])
+				return 0;
+
+			let offx = ind;
+	
+			let offy = 0;
+	
+			while (offx >= world.w) {
+	
+				offx -= world.w;
+	
+				offy++;
+	
+			}
+
+			return {
+
+				x: offx * world.tile,
+				y: offy * world.tile
+
+			};
+
+		}
+
+	// loop //
+
+	const loop = function () {
+
+		loop.update ();
+
+		requestAnimationFrame (loop.render);
+
+		return setTimeout (loop, loop.FPS);
+
+	};	
+
+		loop.update = function () {
+
+			// player //
+
+			world.player.update ();
+
+			return 0;
+
+		};
+
+		loop.render = function () {
+
+			// backdrop //
+
+			plane.ctx.fillStyle = '#222';
+
+			plane.ctx.fillRect (0, 0, plane.c.width, plane.c.height);
+
+			// tiles //
+
+			for (let i = 0; i < loop.buffer.length; i++) {
+
+				const buffer = loop.buffer[i];
+
+				plane.ctx.fillStyle = 'green';
+
+				plane.ctx.fillRect (buffer.x, buffer.y, world.tile, world.tile);
+
+			}
+
+			// player //
+
+			const p = world.player;
+
+			plane.ctx.fillStyle = 'red';
+
+			plane.ctx.fillRect (p.x, p.y, p.w, p.h);
+
+			return 0;
+
+		};
+
+		loop.FPS = 16 // ms
+
+		// prepare the loop buffer
+
+		loop.buffer = [];
+
+			for (let i = 0; i < world.map.length; i++) {
+
+				let tile = world.map.createBuffer (i);
+
+				if (!tile)
+					continue;
+
+				loop.buffer.push (tile);
+
+			}
+
+			console.log ('BUFFER READY:', loop.buffer);
+
+	loop ();
+
+</script></body>
