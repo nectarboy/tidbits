@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset='utf-8'>
+	<title>HOUSE DEFENDER</title>
+</head>
+<body>
+	<button onclick='world.title = true'>titlescreen</button>
+</body>
+</html>
+<style>
+	body {
+		margin: 0;
+		padding: 0;
+		background: #676767;
+	}
+	canvas {
+  		padding: 0;
+   		margin: auto;
+   		position: absolute;
+   		top: 0;
+   		bottom: 0;
+   		left: 0;
+   		right: 0;
+   		border: 1px solid #000;
+   		image-rendering: optimizeSpeed;
+		image-rendering: -moz-crisp-edges;
+		image-rendering: -webkit-optimize-contrast;
+		image-rendering: optimize-contrast;
+		image-rendering: pixelated;
+		-ms-interpolation-mode: nearest-neighbor;
+		font-smooth: never;
+		-webkit-font-smoothing : none;
+	}
+</style>
+
+<script src='data/canvas.js'></script>
+<script src='data/controls.js'></script>
+
+<script src='data/entityclass.js'></script>
+<script src='data/tileclass.js'></script>
+<script src='data/gunclass.js'></script>
+
+<script src='data/spawn.js'></script>
+<script src='data/titlescreen.js'></script>
+<script src='data/spawnmap.js'></script>
+
+<script src='data/logic.js'></script>
