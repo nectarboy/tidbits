@@ -1,0 +1,438 @@
+<!-- Lesson learnt, backup your files. -->
+
+
+<html>
+<head><title>Forest Walk</title></head>
+<body onload='loop()'>
+
+<img src='tiles/grass.png' id='grass'>
+
+<img src='nature/treeOakL1.png' id='treeOakL1'>
+<img src='nature/treeOakL2.png' id='treeOakL2'>
+<img src='nature/treeOakR1.png' id='treeOakR1'>
+<img src='nature/treeOakR2.png' id='treeOakR2'>
+
+<img src='character/manS.png' id='manS'>
+<img src='character/manN.png' id='manN'>
+<img src='character/manE.png' id='manE'>
+<img src='character/manW.png' id='manW'>
+
+<img src='character/move1S.png' id='move1S'>
+<img src='character/move1N.png' id='move1N'>
+<img src='character/move1E.png' id='move1E'>
+<img src='character/move1W.png' id='move1W'>
+
+<img src='character/move2S.png' id='move2S'>
+<img src='character/move2N.png' id='move2N'>
+<img src='character/move2E.png' id='move2E'>
+<img src='character/move2W.png' id='move2W'>
+
+<center>
+<canvas id='ctx' height='600' width='700'><noscript>js required</noscript></canvas>
+</center>
+
+<script>
+/// variables ///
+
+var canvas = document.getElementById('ctx');
+var ctx = canvas.getContext('2d');
+
+var tick = 1;
+
+var W = canvas.width;
+var H = canvas.height;
+
+ctx.imageSmoothingEnabled = false;
+
+//imgs
+
+var grass = document.getElementById('grass');
+
+var treeOakL1 = document.getElementById('treeOakL1');
+var treeOakL2 = document.getElementById('treeOakL2');
+var treeOakR1 = document.getElementById('treeOakR1');
+var treeOakR2 = document.getElementById('treeOakR2');
+
+var manS = document.getElementById('manS');
+var manN = document.getElementById('manN');
+var manE = document.getElementById('manE');
+var manW = document.getElementById('manW');
+
+var move1S = document.getElementById('move1S');
+var move1N = document.getElementById('move1N');
+var move1E = document.getElementById('move1E');
+var move1W = document.getElementById('move1W');
+
+var move2S = document.getElementById('move2S');
+var move2N = document.getElementById('move2N');
+var move2E = document.getElementById('move2E');
+var move2W = document.getElementById('move2W');
+
+var biomeStateNS;
+var biomeStateEW;
+
+var cubeW = 48;
+var cubeH = 48;
+var displayX = W / 2 - cubeW / 2;
+var displayY = H / 2 - cubeH / 2;
+var posX = displayX;
+var posY = displayY;
+var speedX = 0;
+var speedY = 0;
+var maxSpeed = 2;
+var accel = 0;
+var decel = 0;
+var accelProp = 0.3;
+var decelProp = 0.1;
+var keyW = false;
+var keyA = false;
+var keyS = false;
+var keyD = false;
+var moving = false;
+var image = manS;
+var animationSpeed = 12;
+
+var biome = {
+    cubeW: W,
+    cubeH: H,
+    posX: 0,
+    posY: 0,
+    image: grass
+}
+
+var trees = [];
+
+var treeSpawnTime = 60 // ticks
+
+/// controls ///
+
+window.addEventListener('keydown', keyDownHandler);
+window.addEventListener('keyup', keyUpHandler);
+
+function keyDownHandler(e) {
+if(e.keyCode === 87 || e.keyCode === 38) {
+if(!keyW) {
+    keyW = true;
+    keyS = false;
+    image = move1N;
+    moveUp();
+    }
+}
+if(e.keyCode === 83 || e.keyCode === 40) {
+if(!keyS) {
+    keyS = true;
+    keyW = false;
+    image = move1S;
+    moveDown();
+    }
+}
+if(e.keyCode === 68 || e.keyCode === 39) {
+if(!keyD) {
+    keyD = true;
+    keyA = false;
+    image = move1E;
+    moveRight();
+    }
+}
+if(e.keyCode === 65 || e.keyCode === 37) {
+if(!keyA) {
+    keyA = true;
+    keyD = false;
+    image = move1W;
+    moveLeft();
+    }
+}
+}
+function keyUpHandler(e) {
+if(e.keyCode === 87 || e.keyCode === 38) {
+    keyW = false;
+    if(!keyS && !keyA && !keyD) {
+    image = manN;
+    }
+    stopUp();
+}
+if(e.keyCode === 83 || e.keyCode === 40) {
+    keyS = false;
+    if(!keyW && !keyA && !keyD) {
+    image = manS;
+    }
+    stopDown();
+}
+if(e.keyCode === 68 || e.keyCode === 39) {
+    keyD = false;
+    if(!keyW && !keyA && !keyS) {
+    image = manE;
+    }
+    stopRight();
+}
+if(e.keyCode === 65 || e.keyCode === 37) {
+    keyA = false;
+    if(!keyW && !keyS && !keyD) {
+    image = manW;
+    }
+    stopLeft();
+}
+}
+
+
+function moveUp() {
+if(keyW && !keyS) {
+requestAnimationFrame(moveUp);
+accel = accelProp;
+speedY += accel;
+if(speedY >= maxSpeed) {
+speedY = maxSpeed;
+accel = 0;
+}
+if(tick % (animationSpeed * 2) == 0) {
+image = move1N;
+} else if(tick % animationSpeed == 0) {
+image = move2N;
+}
+} else {return;}
+}
+function stopUp() {
+if(!keyW && speedY > 0) {
+requestAnimationFrame(stopUp);
+decel = decelProp;
+speedY -= decel;
+if(speedY <= 0) {
+speedY = 0;
+decel = 0;
+}
+} else {return;}
+}
+
+function moveRight() {
+if(keyD && !keyA) {
+requestAnimationFrame(moveRight);
+accel = accelProp;
+speedX += accel;
+if(speedX >= maxSpeed) {
+speedX = maxSpeed;
+accel = 0;
+}
+if(tick % (animationSpeed * 2) == 0) {
+image = move1E;
+} else if(tick % animationSpeed == 0) {
+image = move2E;
+}
+} else {return;}
+}
+function stopRight() {
+if(!keyD && speedX > 0) {
+requestAnimationFrame(stopRight);
+decel = decelProp;
+speedX -= decel;
+if(speedX <= 0) {
+speedX = 0;
+decel = 0;
+}
+} else {return;}
+}
+
+function moveLeft() {
+if(keyA && !keyD) {
+requestAnimationFrame(moveLeft);
+accel = accelProp;
+speedX -= accel;
+if(speedX <= -maxSpeed) {
+speedX = -maxSpeed;
+accel = 0;
+}
+if(tick % (animationSpeed * 2) == 0) {
+image = move1W;
+} else if(tick % animationSpeed == 0) {
+image = move2W;
+}
+} else {return;}
+}
+function stopLeft() {
+if(!keyA && speedX < 0) {
+requestAnimationFrame(stopLeft);
+decel = decelProp;
+speedX += decel;
+if(speedX >= 0) {
+speedX = 0;
+decel = 0;
+}
+} else {return;}
+}
+
+function moveDown() {
+if(keyS && !keyW) {
+requestAnimationFrame(moveDown);
+accel = accelProp;
+speedY -= accel;
+if(speedY <= -maxSpeed) {
+speedY = -maxSpeed;
+accel = 0;
+}
+if(tick % (animationSpeed * 2) == 0) {
+image = move1S;
+} else if(tick % animationSpeed == 0) {
+image = move2S;
+}
+} else {return;}
+}
+function stopDown() {
+if(!keyW && speedY < 0) {
+requestAnimationFrame(stopDown);
+decel = decelProp;
+speedY += decel;
+if(speedY >= 0) {
+speedY = 0;
+decel = 0;
+}
+} else {return;}
+}
+
+
+/// game logic ///
+
+function generateTrees() {
+if(tick % treeSpawnTime == 0 && moving) {
+    console.log('spawnd tree');
+    trees.push({
+        cubeW: 96,
+        cubeH: 192,
+        posX: Math.random(+ 1) * -288 - 144,
+        posY: Math.random(+ 1) * 550 + 50,
+        image: treeOakL1
+    });
+    trees.push({
+        cubeW: 96,
+        cubeH: 192,
+        posX: Math.random(+ 1) * 288 + 144 + W,
+        posY: Math.random(+ 1) * 550 + 50,
+        image: treeOakL1
+    });
+    trees.push({
+        cubeW: 96,
+        cubeH: 192,
+        posX: Math.random(+ 1) * 550 + 50,
+        posY: Math.random(+ 1) * -50 - 550,
+        image: treeOakL1
+    });
+    trees.push({
+        cubeW: 96,
+        cubeH: 192,
+        posX: Math.random(+ 1) * 550 + 50,
+        posY: Math.random(+ 1) * 50 + 550 + H,
+        image: treeOakL1
+    });
+    for(i = 0; i < trees.length; i++) {
+    }
+}
+}
+
+function checkIfMoving() {
+if(speedX > 0 || speedX < 0 || speedY > 0 || speedY < 0) {
+    moving = true;
+} else {moving = false;}
+if(tick % 100 == 0) {
+console.log('moving is', moving);
+}
+}
+
+function updatePlayer() {
+    posX += speedX;
+    posY += speedY;
+}
+
+function updateEntities() {
+//trees
+for(var i = 0; i < trees.length; i++) {
+trees[i].posX -= speedX;
+trees[i].posY += speedY;
+}
+
+//biome
+biome.posX -= speedX;
+biome.posY += speedY;
+
+if(biome.posX >= biome.cubeW) {
+biome.posX -= biome.cubeW;
+} else if(biome.posX <= -biome.cubeW) {
+biome.posX += biome.cubeW;
+}
+if(biome.posY >= biome.cube) {
+biome.posY -= biome.cubeH;
+} else if(biome.posY <= -biome.cubeH) {
+biome.posY += biome.cubeH;
+}
+}
+
+function updateAll() {
+checkIfMoving();
+updatePlayer();
+updateEntities();
+}
+
+
+/// drawing ///
+
+function drawTrees() {
+for(var i = 0; i < trees.length; i++) {
+ctx.drawImage(trees[i].image,trees[i].posX,trees[i].posY,trees[i].cubeW,trees[i].cubeH);
+}
+}
+
+function drawBiome() {
+
+ctx.drawImage(biome.image, biome.posX, biome.posY, biome.cubeW,biome.cubeH);
+ctx.drawImage(biome.image, biome.posX + biome.cubeW, biome.posY, biome.cubeW,biome.cubeH);
+ctx.drawImage(biome.image, biome.posX + biome.cubeW, biome.posY + biome.cubeH, biome.cubeW,biome.cubeH);
+ctx.drawImage(biome.image, biome.posX, biome.posY + biome.cubeH, biome.cubeW,biome.cubeH);
+ctx.drawImage(biome.image, biome.posX - biome.cubeW, biome.posY + biome.cubeH, biome.cubeW,biome.cubeH);
+ctx.drawImage(biome.image, biome.posX - biome.cubeW, biome.posY , biome.cubeW,biome.cubeH);
+ctx.drawImage(biome.image, biome.posX - biome.cubeW, biome.posY - biome.cubeH, biome.cubeW,biome.cubeH);
+ctx.drawImage(biome.image, biome.posX , biome.posY - biome.cubeH, biome.cubeW,biome.cubeH);
+ctx.drawImage(biome.image, biome.posX + biome.cubeW, biome.posY - biome.cubeH, biome.cubeW,biome.cubeH);
+
+}
+
+function drawPlayer() {
+ctx.drawImage(image,displayX,displayY,cubeW,cubeH);
+}
+
+function draw() {
+drawBiome();
+drawPlayer();
+drawTrees();
+}
+
+/// game loop ///
+
+function loop() {
+
+    requestAnimationFrame(loop);
+    tick++;
+    
+    updateAll();
+    generateTrees();
+    draw();
+
+}
+
+
+</script>
+
+</body>
+</html>
+
+<style>
+
+html {
+background: #333; margin: 0; padding: 0;
+}
+
+#ctx {
+border: 1px solid #999; image-rendering: pixelated;
+}
+
+img {
+display: none;
+}
+
+</style>
