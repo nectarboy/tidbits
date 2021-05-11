@@ -1,0 +1,333 @@
+<center><canvas id='c' width='400' height='600'></canvas></center>
+
+<script>
+
+/* hi there, i see you're taking a peek around the code. sneaky little you.
+
+ you can change around some values and such, but if you're not experienced you'll likely break the game.
+
+as such i will add little markings, 'changable', to some of the safe-to-change values */
+
+var c = document.getElementById('c');
+
+var tick = 0;
+
+    var w = c.width;
+    var h = c.height;
+var ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    
+var sprites = [];
+    sprites[0] = new Image();
+        sprites[0].src = 'rocket/rocket.png';
+    sprites[1] = new Image();
+        sprites[1].src = 'rocket/speedometer.png';
+    sprites[2] = new Image();
+        sprites[2].src = 'rocket/logo.png';
+
+class entity {
+    constructor(w,h, x,y, minSp, maxSp, ySp, image, alive) {
+        this.w = w;
+        this.h = h;
+        this.x = x;
+        this.y = y;
+        this.minSp = minSp;
+        this.maxSp = maxSp;
+        this.ySp = ySp;
+        this.image = image;
+        this.alive = alive;
+    }
+}
+
+class object {
+    constructor(w,h, x,y, image) {
+        this.w = w;
+        this.h = h;
+        this.x = x;
+        this.y = y;
+        this.image = image;
+    }
+}
+
+var rocket = new entity(
+    30, 36,
+    undefined, 0,
+    3, 30,
+    undefined,
+    sprites[0],
+    true //alive
+);
+rocket.x = w/2 - rocket.w/2;
+rocket.ySp = rocket.minSp;
+
+rocket.normSpawn = 14;
+rocket.slowSpawn = 30;
+rocket.spawnSpeed = rocket.normSpawn; //ticks
+
+rocket.preX = undefined;
+rocket.preY = undefined;
+
+rocket.scoreDist = 0;
+rocket.score = 0;
+
+var rocketProperties = Object.assign(rocket);
+
+
+
+var cursor = new object(
+    10, 10,
+    undefined, undefined,
+    '#ffffff'
+);
+
+var logo = new object(
+    192, 128,
+    undefined, undefined,
+    sprites[2]
+);
+logo.x = w/2 - logo.w/2;
+logo.y = h/3 - logo.h/2;
+
+logo.isMainMenu = true;
+
+var plats = [];
+
+var particles = [];
+
+/// CONTROLS ///
+
+window.addEventListener('mousemove', rocketMouse);
+window.addEventListener('mousedown', function() {
+    if(logo.isMainMenu || !rocket.alive)
+        start();
+});
+
+function rocketMouse(e) {
+    var rect = c.getBoundingClientRect();
+    
+    cursor.x = e.clientX - rect.left;
+    cursor.y = e.clientY - rect.top;
+    
+    if(rocket.alive) {
+        rocket.x = cursor.x - rocket.w/2;
+            if(rocket.x <= 0) {
+                rocket.x = 0;
+            } else if(rocket.x >= w - rocket.w) {
+                rocket.x = w - rocket.w;
+            }
+    }
+}
+
+
+/// FUNCTIONS ///
+
+function spawnPlatform() {
+    var platform = new object(
+            Math.floor(Math.random() *35 + 90), 26,
+            undefined, Math.floor(Math.random() *-125 + (rocket.y - h)),
+            'green'
+        );
+    platform.x = Math.floor(Math.random() *(w) - platform.w/2);
+    
+    plats.push(platform);
+    for(i = 0; i < plats.length; i++)
+        console.log('platforms:', plats.length);
+    
+    if(rocket.ySp <= rocket.minSp + 1)
+        rocket.spawnSpeed = rocket.slowSpawn;
+    else rocket.spawnSpeed = rocket.normSpawn;
+}
+
+function fuckingExplodeAndDie() {
+    if(rocket.alive) {
+        rocket.alive = false;
+        console.log('damn a real one passed away today guys 😩. alive:', rocket.alive);
+        createParticle(rocket.x + rocket.w/2, rocket.y + rocket.h/2, 10, '#e8c127', 20, 20, rocket.ySp*4); //explosion babey!
+    }
+}
+
+function createParticle(x, y, size, color, xSp, ySp, amount) { // create a particle
+        
+    for(var i = 0; i < amount; i++) {
+        particles.push({
+            x: Math.floor(x),
+            y: Math.floor(y),
+            size: Math.round(Math.random() * size/1.5 + size),
+            color: color,
+            xSp: Math.random() *(xSp * 2) - xSp,
+            ySp: Math.random() *(ySp * 2) - ySp,
+            vanish: Math.random() * 0.03 + 0.01,
+            opacity: 1
+        });
+    }
+}
+
+
+function update() {
+
+// logic
+
+    rocket.preX = rocket.x;
+    rocket.preY = rocket.y;
+    
+    rocket.y -= rocket.ySp;
+    
+    if(!rocket.alive && rocket.ySp > 0) {
+        rocket.ySp -= 1;
+        if(rocket.ySp <= 0)
+            rocket.ySp = 0;
+    }
+    
+    for(i = 0; i < particles.length; i++) {
+        particles[i].x += particles[i].xSp;
+        particles[i].y += particles[i].ySp;
+        
+        particles[i].opacity -= particles[i].vanish;
+        
+        if(particles[i].opacity <= 0)
+            particles.splice(i,1);
+    }
+    
+if(rocket.alive) {
+    
+    if(plats.length > 0) {
+        for(i = 0; i < plats.length; i++) {
+            if(((rocket.y <= plats[i].y + plats[i].h && rocket.preY > plats[i].y + plats[i].h
+            ) || (rocket.y >= plats[i].y - rocket.h && rocket.y <= plats[i].y + plats[i].h)) && rocket.x > plats[i].x - rocket.w && rocket.x < plats[i].x + plats[i].w) {
+                fuckingExplodeAndDie();
+            }
+            
+            if(plats[i].y >= rocket.y + h/2)
+                plats.splice(i,1);
+        }
+    }
+    
+// speed system -- might need perfecting idk
+    var gap = w - cursor.y + 85;
+        if(gap <= 0 || isNaN(gap))
+            gap = 0;
+            
+    rocket.ySp = Math.floor(gap/11);
+    if(rocket.ySp >= rocket.maxSp)
+        rocket.ySp = rocket.maxSp;
+    else if(rocket.ySp <= rocket.minSp)
+        rocket.ySp = rocket.minSp;
+    
+    //console.log(rocket.ySp);
+    
+// spawn some mf objects
+if(!logo.isMainMenu) {
+    if(tick % rocket.spawnSpeed === 0)
+        spawnPlatform();
+        
+// scoring
+    
+    rocket.scoreDist += rocket.ySp/100; // distance
+    
+    if(tick % 5 === 0) {
+        switch(true) {
+            case (rocket.ySp >= rocket.minSp && rocket.ySp <= 5) :
+                rocket.score += 0.5;
+                break;
+            case (rocket.ySp >= 6 && rocket.ySp <= 9) :
+                rocket.score += 1.5;
+                break;
+            case (rocket.ySp >= 10 && rocket.ySp <= 15) :
+                rocket.score += 3;
+                break;
+            case (rocket.ySp >= 16 && rocket.ySp <= 20) :
+                rocket.score += 10;
+                break;
+            case (rocket.ySp >= 21 && rocket.ySp <= rocket.maxSp) :
+                rocket.score += 38;
+                break;
+        }
+        
+    }
+}
+}
+
+}
+
+function draw() {
+    var translation = -Math.floor(rocket.y - h + rocket.h*3);
+    var transFill = -translation;
+        ctx.save();
+        ctx.translate(0, translation);
+        
+    var sky = ctx.createLinearGradient(0,0,0,-20000);
+        sky.addColorStop(0,'#9ddef2');
+        sky.addColorStop(0.5,'#2baadc');
+        sky.addColorStop(0.6,'#5082c4');
+        sky.addColorStop(0.8,'#1b457b');
+        sky.addColorStop(1,'#052247');
+        
+    ctx.clearRect(0, transFill, w, h);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, transFill, w, h);
+    
+    if(rocket.alive) {
+        ctx.drawImage(rocket.image, rocket.x, rocket.y, rocket.w, rocket.h);
+        if(tick % 3 === 0)
+            createParticle(rocket.x + rocket.w/2, rocket.y + rocket.h, 5, '#e8c127', rocket.ySp/2, 1, 2);
+    }
+    
+    if(plats.length > 0) {
+        for(i = 0; i < plats.length; i++) {
+            ctx.fillStyle = plats[i].image;
+            ctx.fillRect(plats[i].x, plats[i].y, plats[i].w, plats[i].h);
+        }
+    }
+    
+    if(particles.length > 0) {
+        for(var i = 0; i < particles.length; i++) {
+            ctx.fillStyle = particles[i].color;
+            ctx.globalAlpha = particles[i].opacity;
+            ctx.beginPath();
+            ctx.arc(particles[i].x, particles[i].y, particles[i].size * particles[i].opacity, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+    
+        ctx.restore();
+    
+    if(!logo.isMainMenu) {
+        ctx.font = '20px consolas';
+        ctx.fillStyle = 'red';
+        ctx.fillText('Distance: ' + Math.floor(rocket.scoreDist) + 'm',20,30);
+        ctx.font = '26px consolas';
+        ctx.fillText('Score: ' + Math.floor(rocket.score),20,60);
+    }
+    
+    if(logo.isMainMenu) {
+        ctx.drawImage(logo.image, logo.x, logo.y, logo.w, logo.h);
+    }
+    
+    // cursor
+    ctx.fillStyle = cursor.image;
+    ctx.fillRect(cursor.x, cursor.y, cursor.w, cursor.h);
+    
+}
+
+function game() {
+    requestAnimationFrame(game);
+        tick++;
+    update();
+    draw();
+}
+
+function start() {
+    logo.isMainMenu = false;
+    tick = 0;
+    rocket.alive = true;
+    rocket.y = 0;
+    rocket.x = 0;
+    plats.length = 0;
+    particles.length = 0;
+    console.log('started! alive:', rocketProperties.alive);
+}
+
+game();
+
+</script>
