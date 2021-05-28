@@ -94,7 +94,7 @@
                     </td>
                     <td width='200'>
                         <p id='score'></p>
-                        <p id='msg'></p>
+                        <p id='msg' class='fade'></p>
                     </td>
                 </tr>
             </table>
@@ -143,8 +143,13 @@
                     var str = msg[randInt(0, msg.length-1)];
                     msgP.innerHTML = str;
 
-                    msgP.className = '';
-                    msgP.className = 'fade';
+                    msgP.style.transition = '0s';
+                    msgP.style.opacity = '1';
+
+                    setTimeout(function() {
+                        msgP.style.transition = '3s';
+                        msgP.style.opacity = '0';
+                    }, 500);
                 }
 
                 // map
@@ -612,6 +617,13 @@
 
             }
         </script>
+
+        <style>
+            .fade {
+                transition: 3s;
+                opacity: 0;
+            }
+        </style>
 
     </body>
 </html>
