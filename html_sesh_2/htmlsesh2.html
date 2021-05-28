@@ -1,0 +1,617 @@
+<html>
+    <head>
+        <title>TETRIS</title>
+        <meta charset='utf-8'>
+    </head>
+
+    <body bgcolor='ffd0b0'>
+        <div>
+            <h1>AN INTRODUCTION TO TETRIS</h1>
+            <hr>
+
+            <p>
+                Tetris is a game where you stack blocks.<br>
+                It was first made famous in 1989 where it released for the Nintendo GameBoy.
+            </p>
+            <p>This version was pretty aite for it's time and people loved it.</p>
+
+            <img src='https://i.pinimg.com/originals/0c/63/9d/0c639d7ef8c44ca2593b1dac5772ac73.jpg' width='400' height='220' alt='waw ...'>
+        </div>
+
+        <div>
+            <h1>WHAT DO U EVEN DO IN TETRIS ???</h1>
+            <hr>
+
+            <p>In Tetris you ...</p>
+            <ul>
+                <li>Stack random sets of blocks</li>
+                <li>Align those blocks in perfect lines</li>
+                <li>The more lines at once, the more points</li>
+                <li>If you run out of space you die</li>
+            </ul>
+            <br>
+
+            <table>
+                <tr>
+                    <th>block name</td>
+                    <th>picture</td>
+                </tr>
+
+                <tr>
+                    <td>orange ricky</td>
+                    <td><img src='https://static.wikia.nocookie.net/tetrisconcept/images/f/fe/L_Tetromino-0.png/revision/latest?cb=20201205151442' width='50' height='75'></td>
+                </tr>
+                <tr>
+                    <td>blue ricky</td>
+                    <td><img src='https://static.wikia.nocookie.net/tetrisconcept/images/a/a4/J_Tetromino-0.png/revision/latest?cb=20201205151729' width='50' height='75'></td>
+                </tr>
+                <tr>
+                    <td>hero</td>
+                    <td><img src='https://static.wikia.nocookie.net/tetrisconcept/images/4/4a/I_Tetromino-0.png/revision/latest/scale-to-width-down/108?cb=20201205151945' width='20' height='75'></td>
+                </tr>
+                <tr>
+                    <td>teewee</td>
+                    <td><img src='https://static.wikia.nocookie.net/tetrisconcept/images/5/51/T_Tetromino0.png/revision/latest?cb=20201205152323' width='110' height='75'></td>
+                </tr>
+                <tr>
+                    <td>smashboy</td>
+                    <td><img src='https://static.wikia.nocookie.net/tetrisconcept/images/4/47/O_Tetromino0.png/revision/latest?cb=20201205152236' width='75' height='75'></td>
+                </tr>
+            </table>
+
+            <p>
+                <h1>"</h1>
+                <i>aren't these corniest names you've ever heard ...<br>
+                there's more pieces but im too lazy to add em</i>
+                <h1>"</h1>
+            </p>
+        </div>
+
+        <div align='center'>
+            <h2>and now ...</h2>
+            <h1><marquee scrollamount='30'>A GAME OF TETRIS :)</marquee></h1>
+            <small>yes i made this gaame</small>
+
+            <div align='left' style='width: 500px; border: 1px solid black'>
+                <h3>TETRIS CONTROLS</h3>
+                <dl>
+                    <dt>Arrow Keys</dt>
+                    <dd>- move the falling piece</dd>
+                    <dt>Down Key</dt>
+                    <dd>- make the piece fall rlly fast</dd>
+                    <dt>Space</dt>
+                    <dd>- rotate the piece (anti-clockwise !)</dd>
+                </dl>
+            </div>
+            <br>
+
+            <table>
+                <tr>
+                    <td>
+                        <canvas id='canvas' style='border: 1px solid black'>
+                            Your browser's too old to play u.u
+                        </canvas>
+                    </td>
+                    <td width='200'>
+                        <p id='score'></p>
+                        <p id='msg'></p>
+                    </td>
+                </tr>
+            </table>
+            <br>
+
+            <button onclick='initTetris()'>CLICK TO PLAY !!!!!</button>
+
+        </div>
+        <br>
+
+        <!-- tetris taim -->
+        <script>
+            var inittedTetris = false;
+            function initTetris() {
+                if (inittedTetris) return;
+                    inittedTetris = true;
+
+                // constants
+                var tilesize = 16;
+                var gridwidth = 10;
+                var gridheight = 20;
+
+                function randInt(min, max) {
+                    min = Math.ceil(min);
+                    max = Math.floor(max);
+                    return Math.floor(Math.random() * (max - min + 1)) + min;
+                };
+
+                var canvas = document.getElementById('canvas');
+                    canvas.width = tilesize * gridwidth;
+                    canvas.height = tilesize * gridheight;
+                var ctx = canvas.getContext('2d');
+
+                // messages
+                var scoreP = document.getElementById('score');
+                var msgP = document.getElementById('msg');
+
+                var messages = {
+                    reset: ['ok here we go !', 'woohoo tetris t ime', 'good luck ustez >:)', 'win ... if u can mwahahahha'],
+                    line: ['waw !!', 'zoh em gee !!!', 'get em ustez !', 'ur so good !!!', 'go ustez go ustez !'],
+                    die: ['ustez i thought u were better than this ...', 'what ? ustez u died ?? wow .. ok ig ..', 'cmon ustez u can do better.', 'U DIED ??? IM SO DISSAPOINTED IN U !!!'],
+                    place: ['good placement ustez !', 'mmhm i see what ur doing here !', 'ahh u smart lad !', 'mmhm mhmm !', 'ur doing good :)', 'ooh u getting close !']
+                };
+
+                function pickAndPutMessage(msg) {
+                    var str = msg[randInt(0, msg.length-1)];
+                    msgP.innerHTML = str;
+
+                    msgP.className = '';
+                    msgP.className = 'fade';
+                }
+
+                // map
+                var map = [];
+                function generateMap() {
+                    map = [];
+                    for (var i = 0; i < gridheight; i++)
+                        map.push(getNewLine());
+
+                }
+
+                function getNewLine() {
+                    return new Array(gridwidth).fill(0);
+
+                }
+
+                function checkForLines() {
+                    for (var y = 0; y < map.length; y++) {
+                        for (var x = 0; x < map[y].length; x++) {
+                            if (map[y][x] === 0) break;
+
+                            else if (x === map[y].length-1) { // we made it all the way ?
+                                // remove current line ...
+                                map.splice(y,1);
+                                map.unshift(getNewLine());
+
+                                addScore(scoreOnLine);
+
+                                console.log('line cleared');
+                                pickAndPutMessage(messages.line);
+                            }
+                        }
+                    }
+
+                }
+
+                // score
+                var score = 0;
+                var scoreOnLine = 200;
+                var scoreOnPlace = 10;
+
+                function addScore(n) {
+                    score += n;
+                    scoreP.innerHTML = 'score: ' + score;
+                }
+
+                // block data
+                // note - the center of rotations (cor) are unused :|
+                var blocks = {
+                    // square
+                    0: {
+                        data: [
+                            [4,4],
+                            [4,4]
+                        ],
+                        corX: 1,
+                        corY: 1
+                    },
+                    // T block
+                    1: {
+                        data: [
+                            [0,1,0],
+                            [1,1,1]
+                        ],
+                        corX: 1,
+                        corY: 1
+                    },
+                    // line piece
+                    2: {
+                        data: [
+                            [3],
+                            [3],
+                            [3],
+                            [3]
+                        ],
+                        corX: 0,
+                        corY: 1
+                    },
+                    // L piece
+                    3: {
+                        data: [
+                            [2,0],
+                            [2,0],
+                            [2,2]
+                        ],
+                        corX: 0,
+                        corY: 1
+                    },
+                    // J piece
+                    4: {
+                        data: [
+                            [0,5],
+                            [0,5],
+                            [5,5]
+                        ],
+                        corX: 1,
+                        corY: 1
+                    },
+                    // zigzag
+                    5: {
+                        data: [
+                            [0,6,6],
+                            [6,6,0]
+                        ],
+                        corX: 1,
+                        corY: 1
+                    },
+
+                    length: 6
+                };
+
+                var tilecolors = [
+                    'white', // blank space - this shouldnt be accessed
+                    'red',
+                    'blue',
+                    'lime',
+                    'yellow',
+                    'purple',
+                    'orange',
+                    'pink'
+
+                ];
+
+                // block logic
+                var fallingblock = {
+                    x: 2,
+                    y: 3,
+                    rotation: 3,
+                    blockID: 1,
+
+                    fallTick: 0,
+                    fallDelay: 20,
+                    fallMin: 10,
+
+                    // collision
+                    checkCollision() {
+                        var that = this;
+                        var collision = false;
+                        this.executeOnEachTile(function(x, y, tile) {
+                            if (!collision) collision = that.actuallyCheckCollision(x, y, tile)
+                        });
+                    
+                        return collision;
+
+                    },
+
+                    actuallyCheckCollision(x, y, tile) {
+                        if (tile === 0)
+                            return false;
+
+                        return (
+                            (x < 0 || x >= gridwidth || y >= gridheight) // walls / ground
+                            || (map[y][x] > 0) // tiles
+                        );
+
+                    },
+
+                    placeRoutine() {
+                        console.log('place routin-ing');
+                        pickAndPutMessage(messages.place);
+
+                        // copy block tiles to map
+                        this.executeOnEachTile(function(x, y, tile) {
+                            if (tile === 0)
+                                return;
+
+                            map[y][x] = tile;
+                        });
+
+                        addScore(scoreOnPlace);
+
+                        checkForLines();
+
+                    },
+
+                    reset() {
+                        this.blockID = randInt(0, blocks.length-1);
+                        this.rotation = 0;
+
+                        this.fallTick = 0;
+                        if (--this.fallDelay < this.fallMin) this.fallDelay = this.fallMin;
+
+                        this.y = 0;
+                        this.x = 0|(gridwidth/2 - blocks[this.blockID].data[0].length/2);
+
+                    },
+
+                    // moving and updating and stuff
+                    update() {
+                        this.checkToMove();
+
+                    },
+
+                    checkToMove() {
+                        // check controller
+                        if (controller.right) {
+                            controller.right = false;
+                            this.moveX(1);
+                        }
+                        else if (controller.left) {
+                            controller.left = false;
+                            this.moveX(-1);
+                        }
+
+                        if (controller.space) {
+                            controller.space = false;
+                            this.rotate();
+                        }
+
+                        if (controller.down) {
+                            this.fall();
+                        }
+
+                        // check fall delay
+                        if (++this.fallTick === this.fallDelay) {
+                            this.fallTick = 0;
+                            this.fall();
+                        }
+
+                    },
+
+                    moveX(x) {
+                        this.x += x;
+                        if (this.checkCollision()) this.x -= x;
+
+                    },
+
+                    fall() {
+                        this.y += 1;
+                        if (this.checkCollision()) {
+                            this.y -= 1;
+                            this.placeRoutine();
+
+                            // are we at the top rn ??
+                            if (this.y === 0) gameOver();
+
+                            this.reset();
+                        }
+
+                    },
+
+                    rotate() {
+                        this.rotation++;
+                        this.rotation &= 3; // poop u
+
+                        // check if we glitched into a block or something
+                        if (this.checkCollision()) {
+                            this.rotation--;
+                            this.rotation &= 3; // poop u
+                        }
+
+                    },
+
+                    draw() {
+                        this.executeOnEachTile(function(x, y, tile) {drawTile(x, y, tile);});
+
+                    },
+
+                    // rotation helper
+                    executeOnEachTile(fun) {
+                        var block = blocks[this.blockID];
+
+                        switch (this.rotation) {
+                            case 0: // normal rotation
+                                for (var y = 0; y < block.data.length; y++) {
+                                    for (var x = 0; x < block.data[y].length; x++) {
+                                        fun(this.x + x, this.y + y, block.data[y][x]);
+                                    }
+                                }
+                                break;
+
+                            case 1: // tilted clockwise
+                                for (var y = 0; y < block.data.length; y++) {
+                                    for (var x = 0; x < block.data[y].length; x++) {
+                                        var yy = block.data.length-1 - y;
+                                        fun(this.x + y, this.y + x, block.data[yy][x]);
+                                    }
+                                }
+                                break;
+
+                            case 2: // upside down
+                                for (var y = 0; y < block.data.length; y++) {
+                                    for (var x = 0; x < block.data[y].length; x++) {
+                                        var yy = block.data.length-1 - y;
+                                        fun(this.x + x, this.y + y, block.data[yy][x]);
+                                    }
+                                }
+                                break;
+
+                            case 3: // tilted anti-clockwise
+                                for (var y = 0; y < block.data.length; y++) {
+                                    for (var x = 0; x < block.data[y].length; x++) {
+                                        var yy = block.data.length-1 - y;
+                                        var xx = block.data[yy].length-1 - x;
+                                        fun(this.x + y, this.y + x, block.data[y][xx]);
+                                    }
+                                }
+                                break;
+                        }
+
+                    }
+                };
+
+                // controller
+                var controller = {
+                    up: false, down: false, left: false, right: false,
+                    space: false,
+
+                    setKeyState(e, bool) {
+                        switch (e.code) {
+                            case 'KeyW': case 'ArrowUp':
+                                this.up = bool;
+                                break;
+                            case 'KeyS': case 'ArrowDown':
+                                this.down = bool;
+                                break;
+                            case 'KeyA': case 'ArrowLeft':
+                                this.left = bool;
+                                break;
+                            case 'KeyD': case 'ArrowRight':
+                                this.right = bool;
+                                break;
+
+                            case 'Space': // for the cheeky bastards
+                                if (dead) reset();
+                            case 'ShiftRight': case 'ShiftLeft':
+                                this.space = bool;
+                                break;                                 
+
+                            default: return false;
+                        }
+                        return true;
+
+                    },
+
+                    firing: {},
+                    onKeyDown(e) {
+                        // prevent holding down bugs
+                        if (this.firing[e.keyCode]) return;
+                            this.firing[e.keyCode] = true;
+
+                        if (this.setKeyState(e, true)) e.preventDefault();
+
+                    },
+
+                    onKeyUp(e) {
+                        delete this.firing[e.keyCode];
+                        this.setKeyState(e, false);
+
+                    },
+
+                    startListeners() {
+                        document.addEventListener('keydown', onKeyDown);
+                        document.addEventListener('keyup', onKeyUp);
+
+                    }
+                };
+
+                // 'this' keyword redirectors
+                // i could just make an anon function
+                // but who knows maybe we have to take
+                // down the event listeners sometime
+                function onKeyDown(e) {
+                    controller.onKeyDown(e);
+                }
+                function onKeyUp(e) {
+                    controller.onKeyUp(e);
+                }
+
+                // update routine
+                function update() {
+                    if (!dead) {
+                        fallingblock.update();
+                    }
+                    drawFrame();
+
+                }
+
+                // game over
+                var dead = false;
+                function gameOver() {
+                    if (dead) return;
+                    dead = true;
+
+                    console.log('bleh');
+                    pickAndPutMessage(messages.die);
+
+                }
+
+                // drawing
+                function drawBackdrop() {
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                }
+
+                function drawMap() {
+                    for (var y = 0; y < map.length; y++) {
+                        for (var x = 0; x < map[y].length; x++) {
+                            drawTile(x, y, map[y][x]);
+                        }
+                    }
+
+                }
+
+                // the whole ting !
+                function drawFrame() {
+                    drawBackdrop();
+                    drawMap();
+                    fallingblock.draw();
+
+                    if (dead) {
+                        ctx.fillStyle = 'white';
+                        ctx.textAlign = 'center';
+
+                        var centerX = canvas.width / 2;
+                        var centerY = canvas.height / 2;
+                        var subtextOffset = 20;
+
+                        ctx.font = '15px comic sans ms';
+                        ctx.fillText('ZOMG U DIED ???', centerX, centerY);
+
+                        ctx.font = '12px comic sans ms';
+                        ctx.fillText('dw :) SPACE to play again', centerX, centerY + subtextOffset);
+                    }
+
+                }
+
+                function drawTile(x, y, colorID) {
+                    if (colorID === 0)
+                        return;
+
+                    x *= tilesize;
+                    y *= tilesize;
+
+                    ctx.fillStyle = tilecolors[colorID];
+                    ctx.fillRect(x, y, tilesize, tilesize);
+
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x + 0.5, y + 0.5, tilesize, tilesize);
+
+                }
+
+                function reset() {
+                    dead = false;
+                    generateMap();
+                    fallingblock.reset();
+
+                    score = 0;
+                    addScore(0); // reset score display
+
+                    pickAndPutMessage(messages.reset);
+
+                }
+
+                // init ...
+                controller.startListeners();
+                reset();
+
+                // and go !
+                setInterval(update, 1000/30);
+
+                scrollBy(0,1000);
+
+            }
+        </script>
+
+    </body>
+</html>
