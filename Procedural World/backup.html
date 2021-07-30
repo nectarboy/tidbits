@@ -1,0 +1,233 @@
+<head><link rel='icon' href='icon.ico'></head>
+<canvas id=c height=500 width=600></canvas>
+<pre> ← ↑ → keys to move  |  press R to restart</pre>
+<pre>Land Ammount      Small Land Ammount</pre><input type='range' min='5' max='75' value='35' id='slider1'><input type='range' min='5' max='75' value='30' id='slider2'>
+
+<script>
+
+var tick = 0;
+var c = document.getElementById('c');
+var ctx = c.getContext('2d');
+
+var slider1 = document.getElementById('slider1');
+var slider2 = document.getElementById('slider2');
+
+var H = c.height;
+var W = c.width;
+
+var score = 0;
+var hiScore = 0;
+
+var x = Math.random(+ 1) * (W - 200 * 2) + 200;
+var y = Math.random(+ 1) * (H - 300 * 2) + 300;
+var size = 16;
+var sX = 0;
+var sY = -3;
+var sp = 1.5;
+var ju = -9;
+var gr = 0.5;
+var color = 'blue';
+var onG = false;
+var keyD = false;
+var keyA = false;
+var fallThrough = false;
+
+var lndAmt = slider1.value;
+var lndSmallAmt = slider2.value;
+var land = [];
+
+var coinAmt = 5;
+var coins = [];
+
+function changeAmount(e) {
+    console.log('bruh');
+    if(this == slider1) {
+    lndAmt = this.value;
+    } else if(this == slider2) {
+    lndSmallAmt = this.value;
+    }
+}
+
+slider1.addEventListener('input', changeAmount);
+slider2.addEventListener('input', changeAmount);
+
+window.addEventListener('keydown', keyDown);
+window.addEventListener('keyup', keyUp);
+
+function keyDown(e) {
+if(e.keyCode === 82) {
+    restart();
+}
+if(e.keyCode === 39) {
+    keyD = true;
+    keyA = false;
+    sX = sp;
+}
+if(e.keyCode === 37) {
+    keyA = true;
+    keyD = false;
+    sX = -sp;
+}
+if(e.keyCode === 38 && onG) {
+    sY = ju;
+}
+if(e.keyCode === 40) {
+    fallThrough = true;
+}
+}
+function keyUp(e) {
+if(e.keyCode === 39 && keyD) {
+    keyD = false;
+    sX = 0;
+}
+if(e.keyCode === 37 && keyA) {
+    keyA = false;
+    sX = 0;
+}
+if(e.keyCode === 40) {
+    fallThrough = false;
+}
+}
+
+land[0] = {
+    x: x - 30,
+    y: H - 40,
+    sizeX: 75,
+    sizeY: 15,
+    color: 'ghostwhite'
+}
+
+function spawnLand() {
+for(i = 1; i < lndAmt; i++) {
+lndColor = '#'+(Math.random()*0xFFFFFF<<0).toString(16);
+land.push({
+    x: Math.random(+ 1) * (W - 100) + 10,
+    y: Math.random(+ 1) * (H - 100) + 10,
+    sizeX: Math.random(+ 1) * 60 + 30,
+    sizeY: Math.random(+ 1) * 60 + 30,
+    color: '#'+(Math.random()*0xFFFFFF<<0).toString(16) // method by danS on stackoverflow
+});
+}
+}
+function spawnLandSmall() {
+for(i = 1; i < lndSmallAmt; i++) {
+land.push({
+    x: Math.random(+ 1) * (W - 40) + 15,
+    y: Math.random(+ 1) * (H - 40) + 15,
+    sizeX: Math.random(+ 1) * 8 + 8,
+    sizeY: Math.random(+ 1) * 6 + 8,
+    color: '#'+(Math.random()*0xFFFFFF<<0).toString(16) // method by danS on stackoverflow
+});
+}
+}
+
+function spawnCoins() {
+for(i = 0; i < coinAmt; i++) {
+var num = Math.round(Math.random(+ 1) * (land.length - 1));
+console.log(num);
+coins.push({
+    x: land[num].x + (land[num].sizeX / 2) - 16 / 2,
+    y: land[num].y - 32,
+    size: 16,
+    color: 'yellow',
+    sY: 0.5
+})
+}
+}
+
+function generateWorld() {
+
+    spawnLand();
+    spawnLandSmall();
+    spawnCoins();
+land.sort(function sortLand(a, b) {
+    return parseFloat(a.y) - parseFloat(b.y);
+});
+}
+
+
+
+function update() {
+sY += gr;
+x += sX;
+y += sY;
+onG = false;
+
+for(i = 0; i < coins.length; i++) {
+    if(tick % 20 == 0) {
+    coins[i].sY = -coins[i].sY;
+    }
+    coins[i].y += coins[i].sY;
+    
+    if(x > coins[i].x - size && x < coins[i].x + coins[i].size && y > coins[i].y - size && y < coins[i].y + coins[i].size) {
+        coins.splice(i,1);
+        console.log('got coin');
+    }
+}
+
+for(i = 0; i < land.length; i++) {
+    if(y >= land[i].y - size && y <= land[i].y + size / 2 && x >= land[i].x - size && x <= land[i].x + land[i].sizeX && sY > 0 && !fallThrough) {
+        onG = true;
+        y = land[i].y - size;
+        sY = 0;
+    }
+}
+}
+
+function restart() {
+    x = Math.random(+ 1) * (W - 200 * 2) + 200;
+    y = Math.random(+ 1) * (H - 300 * 2) + 300;
+    size = 16;
+    sX = 0;
+    sY = -3;
+    sp = 1.5;
+    ju = -9;
+    gr = 0.5;
+    color = 'blue';
+    onG = false;
+    keyD = false;
+    keyA = false;
+    fallThrough = false;  
+    land = [];
+    coins = [];
+    land[0] = {
+    x: x - 30,
+    y: H - 40,
+    sizeX: 75,
+    sizeY: 15,
+    color: 'ghostwhite'
+    }
+    generateWorld();
+
+}
+
+function loop() {
+    requestAnimationFrame(loop);
+    tick++;
+    
+    update();
+    
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0,0,W,H);
+    
+    for(i = 0; i < land.length; i++) {
+    ctx.fillStyle = land[i].color;
+    ctx.fillRect(land[i].x,land[i].y,land[i].sizeX,land[i].sizeY);
+    }
+    for(i = 0; i < coins.length; i++) {
+    ctx.fillStyle = coins[i].color;
+    ctx.fillRect(coins[i].x,coins[i].y,coins[i].size,coins[i].size);
+    }
+    
+    ctx.fillStyle = color;
+    ctx.fillRect(x,y,size,size);
+}
+
+loop();
+generateWorld();
+
+
+
+
+</script>
